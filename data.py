@@ -70,5 +70,5 @@ for sn in dic_meta.itervalues():
             allvaris.append(varis)
 
 output = open('data.pkl','wb')
-pickle.dump((allphases, allfluxes, allvaris),output)
+pickle.dump((allphases, allfluxes, allvaris, ledge),output)
 output.close()

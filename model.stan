@@ -88,36 +88,37 @@ model {
               if (matind1 <= matind2){
                 if (matind1 == matind2){
                   Sigma[matind1,matind2]= c_eta_sq + c_sigma_sq;
-                  } else {
-                    Sigma[matind1,matind2]= c_eta_sq * exp(-c_rho_sq * pow(phase[i1,j1]-t_max[i1] - phase[i2,j2]+t_max[i2],2));
-                    Sigma[matind2,matind1]=Sigma[matind1,matind2];
-                  }
                 }
-                matind2=matind2+1;
+                else {
+                  Sigma[matind1,matind2]= c_eta_sq * exp(-c_rho_sq * pow(phase[i1,j1]-t_max[i1] - phase[i2,j2]+t_max[i2],2));
+                  Sigma[matind2,matind1]=Sigma[matind1,matind2];
+                }
               }
+              matind2=matind2+1;
             }
-
-            #if 4400A add the data -- slope covariance
-            if (k1==ind4400){
-              Sigma[matind1,matind2]= -2 * c_rho_sq * (phase[i1,j1]-t_max[i1]) * c_eta_sq * exp(-c_rho_sq * pow(phase[i1,j1]-t_max[i1],2));
-              Sigma[matind2,matind1]=Sigma[matind1,matind2];
-            }
-            matind1=matind1+1;
           }
-        }
 
-        # if 4400A add the zero slope condition
-        if (k1==ind4400){
-          Sigma[matind1,matind1]= 2 * c_rho_sq * c_eta_sq;
-          c[matind1]=0;
+          #if 4400A add the data -- slope covariance
+          if (k1==ind4400){
+            Sigma[matind1,matind2]= 2 * c_rho_sq * (phase[i1,j1]-t_max[i1]) * c_eta_sq * exp(-c_rho_sq * pow(phase[i1,j1]-t_max[i1],2));
+            Sigma[matind2,matind1]=Sigma[matind1,matind2];
+          }
+          matind1=matind1+1;
         }
-
-        c ~ multi_normal(zerovec, Sigma);
-        for (dum in 1:ntotspec) y_trunc[dum]=10.^(-(D_[dum]+c[dum])/2.5);
-        y0 ~ normal(y_trunc,sig0);
       }
+
+      # if 4400A add the zero slope condition
+      if (k1==ind4400){
+        Sigma[matind1,matind1]= 2 * c_rho_sq * c_eta_sq;
+        c[matind1]=0;
+      }
+
+      c ~ multi_normal(zerovec, Sigma);
+      for (dum in 1:ntotspec) y_trunc[dum]=10.^(-(D_[dum]+c[dum])/2.5);
+      y0 ~ normal(y_trunc,sig0);
     }
-    c_eta_sq ~ cauchy(0, 5);
-    c_inv_rho_sq ~ cauchy(0, 100);
-    c_sigma_sq ~ cauchy(0, 5);     
   }
+  c_eta_sq ~ cauchy(0, 10);
+  c_inv_rho_sq ~ cauchy(0, 400);
+  c_sigma_sq ~ cauchy(0, 1);     
+}

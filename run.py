@@ -14,7 +14,7 @@ pkl_file = open('data.pkl', 'r')
 pkl_file.close()
 
 nsne = len(allphases)
-nsne=4
+nsne=10
 nphases = numpy.zeros(nsne,dtype='int')
 for i in xrange(nsne):
    nphases[i]=len(allphases[i]) 
@@ -43,10 +43,10 @@ data = {'nsne': nsne, 'nbands': nbands, 'maxphases': maxphases, 'nphases': nphas
 R_simplex = ((-1.)**numpy.arange(nsne)*.25 + .5)*2./nsne
 R_simplex = R_simplex/R_simplex.sum()
 
-init = [{'c_eta_sq':0.02,
-   'c_inv_rho_sq':2*16.,
-   'c_sigma_sq':1e-4,
-   'Delta_scale':0.1,
+init = [{'c_eta_sq':0.7,
+   'c_inv_rho_sq':270,
+   'c_sigma_sq':0.006,
+   'Delta_scale':0.75,
    'Delta_unit':R_simplex,
    't_max':numpy.mean(phases,axis=1),
    'cfn': numpy.zeros((nsne,maxphases,nbands))
@@ -54,7 +54,7 @@ init = [{'c_eta_sq':0.02,
 
 sm = pystan.StanModel(file='model.stan')
 control = {'stepsize':1}
-fit = sm.sampling(data=data, iter=2000, chains=nchain,control=control,init=init, thin=1)
+fit = sm.sampling(data=data, iter=1000, chains=nchain,control=control,init=init, thin=1)
 
 
 output = open('temp.pkl','wb')

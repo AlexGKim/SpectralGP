@@ -7,7 +7,7 @@ from astropy.io import fits
 from specutils.io import read_fits
 
 
-prange = [-5,10]
+prange = [-10,15]
 lmin = 3300.
 lmax = 9400.
 nlbin = 10
@@ -64,7 +64,7 @@ for sn in dic_meta.itervalues():
                     phases.append(spec['salt2.phase'])
 
         phases=numpy.array(phases)
-        if (len(phases) >=4 and (phases<0).sum() !=0 and (phases>0).sum() !=0):
+        if (len(phases) >=5 and (phases<0).sum() >=2 and (phases>0).sum() >=2):
             allfluxes.append(fluxes)
             allphases.append(phases)
             allvaris.append(varis)

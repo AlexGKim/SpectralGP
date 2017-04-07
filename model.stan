@@ -1,22 +1,50 @@
-#./gerard11 sample num_warmup=5000 num_samples=5000 data file=data.R init=init11.R output file=output11.csv refresh=1000
+functions {
+  int[] mastertosnspec(int m, int[] cumsum){
+    int i;
+    int ans[2];
+    i=1;
+    while (m > cumsum[i]){
+      i=i+1;
+    }
+    ans[1]= i;
+    if (i==1) {
+      ans[2] = m;
+    }
+    else{
+      ans[2]= m-cumsum[i-1];
+    }
+    return ans;
+  }
+}
 
 data {
   int nsne;
   int nbands;
-  int maxphases;
-
   int nphases[nsne];
+
+  # int maxphases;
+  int ntotspec;
   int ind4400;
 
-  matrix[maxphases, nbands] flux[nsne];
-  matrix[maxphases, nbands] vars[nsne];
-  vector[maxphases] phase[nsne];
+  vector[ntotspec] flux[nbands];
+  vector[ntotspec] sig[nbands];
+
+  vector[ntotspec] phase;
 }
 
 transformed data {
-  int ntotspec;
-  ntotspec=0;
-  for (i in 1:nsne) ntotspec=ntotspec+nphases[i];  
+  int cumsum[nsne];
+  vector[ntotspec] zerovec1;
+  vector[ntotspec+1] zerovec2;
+
+  cumsum[1] = nphases[1];
+  for (i in 2:nsne) cumsum[i] = cumsum[i-1]+nphases[i];
+  # print (nphases);
+  # print (cumsum);
+  for (i in 1:ntotspec) print (i," ",mastertosnspec(i, cumsum));
+
+  for (i in 1:ntotspec) zerovec1[i]=0;
+  for (i in 1:ntotspec+1) zerovec2[i]=0;
 }
 
 parameters {
@@ -28,8 +56,7 @@ parameters {
   simplex[nsne] Delta_unit;
 
   real t_max[nsne];
-
-  matrix[maxphases, nbands] cfn[nsne];
+  vector[ntotspec] cfn[nbands];
 }
 
 transformed parameters {
@@ -42,24 +69,20 @@ transformed parameters {
 model {
 
   int dim;
-  int matind1;
-  int matind2;
+  int in1[2];
+  int in2[2];
+  vector[ntotspec] D_;
+  vector[ntotspec] f_model;
 
-  vector[ntotspec] y0;
-  vector[ntotspec] sig0;
+  for (index in 1:ntotspec){
+    in1=mastertosnspec(index, cumsum);
+    D_[index] = Delta[in1[1]];
+  }
 
   #treat each band indepedently
   for (k1 in 1:nbands){
-    #assign vectors of the fluxes and uncertainties for data only in this band   
-    matind1=1;
-    for (i1 in 1:nsne){
-      for (j1 in 1:nphases[i1]){
-        y0[matind1]=flux[i1,j1,k1];
-        sig0[matind1]=sqrt(vars[i1,j1,k1]);
-        matind1=matind1+1;
-      }
-    }
 
+    # the dimensionality of the matrix
     if (k1==ind4400){
       dim = ntotspec+1;
     }
@@ -68,55 +91,43 @@ model {
     }
 
     {
-      vector[dim] zerovec;
+      # fill the covariance matrix
       matrix[dim, dim] Sigma;
-      vector[dim] c;
-      vector[ntotspec] y_trunc;
-      vector[ntotspec] D_;
-      for (i in 1:dim) zerovec[i]=0;
+      for (i1 in 1:ntotspec){
+        in1 = mastertosnspec(i1, cumsum);
+        Sigma[i1,i1]= c_eta_sq + c_sigma_sq;
 
-      matind1=1;
-      for (i1 in 1:nsne){
-        for (j1 in 1:nphases[i1]){
-          c[matind1]=cfn[i1,j1,k1];
-          D_[matind1]=Delta[i1];
-
-          #fill in data
-          matind2=1;
-          for (i2 in 1:nsne){
-            for (j2 in 1:nphases[i2]){
-              if (matind1 <= matind2){
-                if (matind1 == matind2){
-                  Sigma[matind1,matind2]= c_eta_sq + c_sigma_sq;
-                }
-                else {
-                  Sigma[matind1,matind2]= c_eta_sq * exp(-c_rho_sq * pow(phase[i1,j1]-t_max[i1] - phase[i2,j2]+t_max[i2],2));
-                  Sigma[matind2,matind1]=Sigma[matind1,matind2];
-                }
-              }
-              matind2=matind2+1;
-            }
-          }
-
-          #if 4400A add the data -- slope covariance
-          if (k1==ind4400){
-            Sigma[matind1,matind2]= 2 * c_rho_sq * (phase[i1,j1]-t_max[i1]) * c_eta_sq * exp(-c_rho_sq * pow(phase[i1,j1]-t_max[i1],2));
-            Sigma[matind2,matind1]=Sigma[matind1,matind2];
-          }
-          matind1=matind1+1;
+        for (i2 in i1+1:ntotspec){
+          in2 = mastertosnspec(i2, cumsum);
+          Sigma[i1,i2]= c_eta_sq * exp(-c_rho_sq * pow(phase[i1]-t_max[in1[1]] - phase[i2]+t_max[in2[1]],2));
+          Sigma[i2,i1]=Sigma[i1,i2];
+        }
+        #if it is 4400 add in extra row/column
+        if (k1==ind4400){
+          Sigma[i1,ntotspec+1]= 2 * c_rho_sq * (phase[i1]-t_max[in1[1]]) * c_eta_sq * exp(-c_rho_sq * pow(phase[i1]-t_max[in1[1]],2));
+          Sigma[ntotspec+1,i1] = Sigma[i1,ntotspec+1];
         }
       }
+      if (k1==ind4400) Sigma[ntotspec+1,ntotspec+1] = 2 * c_rho_sq * c_eta_sq;
 
-      # if 4400A add the zero slope condition
-      if (k1==ind4400){
-        Sigma[matind1,matind1]= 2 * c_rho_sq * c_eta_sq;
-        c[matind1]=0;
-      }
-
-      c ~ multi_normal(zerovec, Sigma);
-      for (dum in 1:ntotspec) y_trunc[dum]=10.^(-(D_[dum]+c[dum])/2.5);
-      y0 ~ normal(y_trunc,sig0);
+      #calculate the c GP
+      if (k1 != ind4400){
+        cfn[k1] ~ multi_normal(zerovec1, Sigma);
+      } 
+      else{
+        {
+          vector[dim] c;
+          for (dum in 1:ntotspec) c[dum]=cfn[k1][dum];
+          c[ntotspec+1]=0;
+          c ~ multi_normal(zerovec2, Sigma);
+        }
+      }           
     }
+
+    # probability for data
+    f_model = D_ + cfn[k1];
+    for (dum in 1:ntotspec) f_model[dum]=10.^(-f_model[dum]/2.5);
+    flux[k1] ~ normal(f_model, sig[k1]);
   }
   c_eta_sq ~ cauchy(0, 10);
   c_inv_rho_sq ~ cauchy(0, 400);

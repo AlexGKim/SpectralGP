@@ -14,11 +14,11 @@ f = open('temp.pkl','rb')
 mega=numpy.array([fit['Delta_scale'],fit['c_eta_sq'],fit['c_inv_rho_sq'],fit['c_sigma_sq']])
 mega=numpy.transpose(mega)
 figure=corner.corner(mega) #,labels=[r'$\eta^2$',r'$w$',r'$\sigma$'])
-plt.show()
+plt.savefig('param_corner.pdf')
 
 
 figure=corner.corner(fit['t_max'])
-plt.show()
+plt.savefig('t_max_corner.pdf')
 
 wefwe
 
@@ -27,7 +27,7 @@ pkl_file = open('data.pkl', 'r')
 pkl_file.close()
 
 nsne = len(allphases)
-nsne=4
+nsne=10
 nbands = allfluxes[0][0].shape[0]
 
 for i in xrange(nbands):

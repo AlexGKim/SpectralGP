@@ -50,9 +50,12 @@ def makedata():
    data = {'nsne': nsne, 'nbands': nbands, 'nphases': nphases, 'ntotspec':ntotspec,'ind4400': ind4400, 'flux': flux, 'sig':sig, 'phase':phase}
    return data
 
-def main(argv):
+def main():
    nchain=4
    data=makedata()
+   nsne=data['nsne']
+   nbands=data['nbands']
+   ntotspec=data['ntotspec']
    R_simplex = ((-1.)**numpy.arange(nsne)*.25 + .5)*2./nsne
    R_simplex = R_simplex/R_simplex.sum()
 
@@ -70,10 +73,10 @@ def main(argv):
    fit = sm.sampling(data=data, iter=1000, chains=nchain,control=control,init=init, thin=1)
 
 
-   output = open('test{}.pkl'.format(argv),'wb')
+   output = open('test1.pkl','wb')
    pickle.dump((fit.extract(),fit.get_sampler_params()), output, protocol=2)
    output.close()
    print fit
 
 if __name__ == "__main__":
-   main('1')
+   main()

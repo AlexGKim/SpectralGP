@@ -11,9 +11,9 @@ import run
 
 # mpl.rcParams['font.size'] = 18
 
-def main(argv):
+def main(argv, data):
     outdir='output{}/'.format(argv)
-    data = run.makedata()
+
     ntotspec=data['ntotspec']
     nbands=data['nbands']
 
@@ -44,4 +44,5 @@ def main(argv):
     plt.savefig(outdir+'lc.pdf')
 
 if __name__ == "__main__":
-   main(sys.argv[1])
+    data = run.makedata()
+   main(sys.argv[1],data)

@@ -58,7 +58,7 @@ parameters {
   real<lower=0> dust1_0;
   vector[nbands-1] dust1_rest;
 
-  real<lower=0> dust2_0;
+  real<upper=0> dust2_0;
   vector[nbands-1] dust2_rest;
 
   simplex[nsne] d1_unit;

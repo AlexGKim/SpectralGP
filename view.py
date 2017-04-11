@@ -11,20 +11,20 @@ import run
 
 # mpl.rcParams['font.size'] = 18
 
-def main(argv, data):
+def main(argv, data, fit):
     outdir='output{}/'.format(argv)
 
     ntotspec=data['ntotspec']
     nbands=data['nbands']
 
-    f = open('temp{}.pkl'.format(argv),'rb')
-    (fit,_) = pickle.load(f)
+    figure=corner.corner(fit['Delta_scale'])
+    plt.savefig(outdir+'Delta_scale_corner.pdf')
 
     figure=corner.corner(fit['t_max'])
     plt.savefig(outdir+'t_max_corner.pdf')
 
     for i in xrange(nbands):
-        mega=numpy.array([fit['c_eta_sq'][:,i],fit['c_inv_rho_sq'][:,i],fit['c_sigma_sq'][:,i]])
+        mega=numpy.array([fit['c_eta_sq'][:,i],fit['c_rho_sq'][:,i],fit['c_sigma_sq'][:,i]])
         mega=numpy.transpose(mega)
         figure=corner.corner(mega) #,labels=[r'$\eta^2$',r'$w$',r'$\sigma$'])
         plt.savefig(outdir+'param_corner{}.pdf'.format(i))
@@ -44,5 +44,8 @@ def main(argv, data):
     plt.savefig(outdir+'lc.pdf')
 
 if __name__ == "__main__":
-    data = run.makedata()
-   main(sys.argv[1],data)
+    f = open('temp{}.pkl'.format(sys.argv[1]),'rb')
+    (fit,_) = pickle.load(f)
+    nsne=fit['t_max'].shape[1]
+    data = run.makedata(nsne)
+    main(sys.argv[1],data,fit)

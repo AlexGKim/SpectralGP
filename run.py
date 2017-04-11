@@ -9,14 +9,13 @@ def mastertosnspec(m, cumsum):
    index = numpy.searchsorted(cumsum, m,side='right')-1
    return (index,m-cumsum[index])
 
-def makedata():
-
+def makedata(nsne):
+   if nsne is None:
+      nsne = len(allphases)
    pkl_file = open('data.pkl', 'r')
    (allphases, allfluxes, allvaris, ledge) = pickle.load(pkl_file)
    pkl_file.close()
 
-   nsne = len(allphases)
-   nsne=10
    nphases = numpy.zeros(nsne,dtype='int')
    for i in xrange(nsne):
       nphases[i]=len(allphases[i])
@@ -50,9 +49,8 @@ def makedata():
    data = {'nsne': nsne, 'nbands': nbands, 'nphases': nphases, 'ntotspec':ntotspec,'ind4400': ind4400, 'flux': flux, 'sig':sig, 'phase':phase}
    return data
 
-def main():
+def main(data):
    nchain=4
-   data=makedata()
    nsne=data['nsne']
    nbands=data['nbands']
    ntotspec=data['ntotspec']
@@ -79,4 +77,6 @@ def main():
    print fit
 
 if __name__ == "__main__":
-   main()
+   nsne=10
+   data=makedata(nsne)
+   main(data)
